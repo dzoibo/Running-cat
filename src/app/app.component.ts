@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import lottielLight from 'lottie-web';
 import { interval } from 'rxjs';
 
@@ -8,7 +8,7 @@ import { interval } from 'rxjs';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit{
+export class AppComponent implements OnInit,OnDestroy{
   title = 'running-cat';
    catPosition={
     x:0,
@@ -22,8 +22,8 @@ export class AppComponent implements OnInit{
   };
   width!: number;
   height!: number;
-  timeOut= interval(1000);
-  touchInterval!: number;
+  timeOut= interval(100);
+  subscription: any;
   ngOnInit(){
     this.catLottie=document.getElementById('lottie') as HTMLElement;
     lottielLight.loadAnimation({
@@ -36,16 +36,19 @@ export class AppComponent implements OnInit{
     this.width=this.catLottie.getBoundingClientRect().width;
     this.height=this.catLottie.getBoundingClientRect().height;
     this.updateAnimation();
-    this.timeOut.subscribe(value=>{
-      console.log(value);
-    });
+    this.subscription=this.timeOut.subscribe(()=>{
+      const x=this.catLottie.getBoundingClientRect().right-200;
+      const y=this.catLottie.getBoundingClientRect().bottom-100;
+      const distance=Math.sqrt(Math.pow((-this.catPosition.x+this.mouse.x),2)+Math.pow((+this.catPosition.y-this.mouse.y),2));
+      console.log(this.catPosition,this.mouse);
+      this.setAnimationSpeed(distance);
+  });
   }
 
 
 
 @HostListener('document: mousemove', ['$event'])
   handleMousemove(event: MouseEvent) {
-    const distance=Math.sqrt(Math.pow((event.clientX-this.mouse.x),2)+Math.pow((event.clientY-this.mouse.y),2))
     this.mouse.x=event.clientX;
     this.mouse.y=event.clientY;
   }
@@ -55,9 +58,11 @@ export class AppComponent implements OnInit{
   }
 
   setAnimationSpeed(distance: number){
-    while(distance>100){
-      lottielLight.setSpeed(distance/100);
-
+    console.log(distance,"llll");
+    if(distance>210){
+      lottielLight.setSpeed(Math.round(distance/100));
+    }else{
+      lottielLight.setSpeed(1);
     }
   }
 
@@ -73,8 +78,8 @@ export class AppComponent implements OnInit{
     requestAnimationFrame(this.updateAnimation);
   }
 
-  
-
-   
+  ngOnDestroy(){
+    this.subscription.unsubscribe();
+  }
 }
 
